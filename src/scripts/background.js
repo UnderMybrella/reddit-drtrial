@@ -8,11 +8,21 @@ function normalizeCharacterName(name) {
 }
 
 function getSpritesList(name) {
-	return fetch('busts.json')
-        .then(function (response) { return response.json() })
+    return SettingStorage.get('sprites_sourcelist')
+        .then(function (settings) {
+            return fetch(settings.sprites_sourcelist);
+        })
+        .then(function (response) {
+            return response.json();
+        }, function (err) {
+            return fetch('busts.json')
+                .then(function (response) {
+                    return response.json()
+                });
+        })
         .then(function (batch) {
-        	return batch[name];
-    	});
+            return batch[name];
+        });
 }
 
 function filterUndefined(itm) {
@@ -45,18 +55,27 @@ var character_map = {
 };
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.openSettings) {
+        if ('runtime' in chrome && 'openOptionsPage' in chrome.runtime)
+            chrome.runtime.openOptionsPage();
+        else
+            chrome.tabs.create({ url: chrome.extension.getURL('options.html') });
 
-	if("custom_sprites" in request){
-		Promise.resolve(request["custom_sprites"])
-			.then(sendSpritesBack)
-			.then(sendResponse);
-	}
-	else{
-    	normalizeCharacterName(request.character)
-        	.then(getSpritesList)
-        	.then(sendSpritesBack)
-        	.then(sendResponse);
-	}
+        return false;
+    }
+
+    if (Array.isArray(request.custom_sprites)) {
+        Promise.resolve(request.custom_sprites)
+            .then(sendSpritesBack)
+            .then(sendResponse);
+
+    } else {
+        normalizeCharacterName(request.character)
+            .then(getSpritesList)
+            .then(sendSpritesBack)
+            .then(sendResponse);
+    }
+
     function sendSpritesBack(lista) {
         return {
             sprites: lista.filter(filterUndefined)
@@ -65,3 +84,34 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
     return true;
 });
+
+function getOption(first, defecto) {
+    return (first != null ? first : defecto);
+}
+
+function install() {
+    SettingStorage.get()
+        .then(function(settings) {
+            return {
+                theme:              getOption(settings.theme,              'default'),
+                bullets_bgred:      getOption(settings.bullets_bgred,      false),
+                banner_paused:      getOption(settings.banner_paused,      true),
+                sprites_sourcelist: getOption(settings.sprites_sourcelist, 'https://frbrz-kumo.appspot.com/postit/busts.json')
+            };
+        })
+        .then(SettingStorage.set);
+}
+
+function installIfFirefoxStillDoesntImplementTheOnInstalledEvent() {
+    var installed = localStorage.getItem('installed');
+
+    if (installed != 'true') {
+        install();
+        localStorage.setItem('installed', 'true');
+    }
+}
+
+if ('onInstalled' in chrome.runtime)
+    chrome.runtime.onInstalled.addListener(install);
+else
+    installIfFirefoxStillDoesntImplementTheOnInstalledEvent();

@@ -5,37 +5,85 @@
     "version": "0.1.2",
     "icons": {
         "16": "icon-16.png",
+        "48": "icon-48.png",
         "64": "icon-64.png",
         "96": "icon-96.png",
         "128": "icon-128.png"
     },
     "background": {
         "scripts": [
+            "settingstorage.js",
             "background.js"
-        ],
-        "persistent": false
+        ]
     },
-    "options_ui": {
-        "page": "options.html",
-        "chrome_style": true
-    },
+    "permissions": [
+        "storage"
+    ],
     "content_scripts": [
         {
             "matches": [
-                "*://www.reddit.com/r/DanganRoleplay/*",
-                "*://www.reddit.com/r/Danganroleplay/*",
-                "*://www.reddit.com/r/danganroleplay/*"
+                "*://*.reddit.com/message/*",
+                "*://*.reddit.com/user/*",
+                "*://*.reddit.com/r/DanganRonpa/comments/*",
+                "*://*.reddit.com/r/Danganronpa/comments/*",
+                "*://*.reddit.com/r/danganronpa/comments/*",
+                "*://*.reddit.com/r/DanganRoleplay/comments/*",
+                "*://*.reddit.com/r/Danganroleplay/comments/*",
+                "*://*.reddit.com/r/danganroleplay/comments/*",
+                "*://*.reddit.com/r/DRWelcomeBackDespair/comments/*",
+                "*://*.reddit.com/r/DRwelcomebackdespair/comments/*",
+                "*://*.reddit.com/r/drwelcomebackdespair/comments/*"
+            ],
+            "css": [
+                "common.css"
             ],
             "js": [
-                "settings.js"
+                "format.js"
             ],
             "run_at": "document_start"
         },
         {
             "matches": [
-                "*://www.reddit.com/r/DanganRonpa/comments/*",
-                "*://www.reddit.com/r/Danganronpa/comments/*",
-                "*://www.reddit.com/r/danganronpa/comments/*"
+                "*://*.reddit.com/r/DanganRoleplay/*",
+                "*://*.reddit.com/r/Danganroleplay/*",
+                "*://*.reddit.com/r/danganroleplay/*"
+            ],
+            "css": [
+                "danganroleplay_all.css"
+            ],
+            "js": [
+                "settingstorage.js",
+                "settingapplication.js"
+            ],
+            "run_at": "document_start"
+        },
+        {
+            "matches": [
+                "*://*.reddit.com/r/DanganRoleplay/comments/*",
+                "*://*.reddit.com/r/Danganroleplay/comments/*",
+                "*://*.reddit.com/r/danganroleplay/comments/*"
+            ],
+            "css": [
+                "danganroleplay_comments.css"
+            ],
+            "js": [
+                "constants.js",
+                "constants_roleplay.js",
+                "core.js",
+                "participants.js",
+                "flairchange.js",
+                "spritemenu.js",
+                "mentionmenu.js",
+                "bulletmenu.js",
+                "youtubeplayer.js"
+            ],
+            "run_at": "document_end"
+        },
+        {
+            "matches": [
+                "*://*.reddit.com/r/DanganRonpa/comments/*",
+                "*://*.reddit.com/r/Danganronpa/comments/*",
+                "*://*.reddit.com/r/danganronpa/comments/*"
             ],
             "css": [
                 "danganronpa.css"
@@ -46,32 +94,6 @@
                 "core.js",
                 "participants.js",
                 "flairchange.js",
-                "format.js",
-                "spritemenu.js",
-                "mentionmenu.js",
-                "bulletmenu.js",
-                "youtubeplayer.js"
-            ],
-            "run_at": "document_end"
-        },
-        {
-            "matches": [
-                "*://www.reddit.com/r/DanganRoleplay/comments/*",
-                "*://www.reddit.com/r/Danganroleplay/comments/*",
-                "*://www.reddit.com/r/danganroleplay/comments/*",
-                "*://www.reddit.com/message/*",
-                "*://www.reddit.com/user/*"
-            ],
-            "css": [
-                "danganroleplay.css"
-            ],
-            "js": [
-                "constants.js",
-                "constants_roleplay.js",
-                "core.js",
-                "participants.js",
-                "flairchange.js",
-                "format.js",
                 "spritemenu.js",
                 "mentionmenu.js",
                 "bulletmenu.js",

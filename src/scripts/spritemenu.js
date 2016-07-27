@@ -11,9 +11,7 @@
         button.className = 'drp-button drp-insertsprite';
         button.textContent = 'Sprite';
 
-        target = document.querySelector(target);
-        if (target)
-            target.appendChild(button);
+        target.appendChild(button);
 
         target = null;
         button = null;
@@ -66,16 +64,17 @@
         container = null;
     }
 
-    createSpriteButton('.commentarea .drp-menu');
-    createSpriteButton('.sitetable .drp-menu');
+    Array.prototype.forEach.call(
+        document.querySelectorAll('.bottom-area .drp-menu'),
+        createSpriteButton
+    );
 
     DR.addListener('insertsprite', spriteSelectionHandler);
 
     document.querySelector('body').addEventListener('click', function (evt) {
-    
-    	if (!evt.target.classList.contains('drp-insertsprite'))
+        if (!evt.target.classList.contains('drp-insertsprite'))
             return;
-		
+
         evt.preventDefault();
         evt.stopPropagation();
 
@@ -86,11 +85,11 @@
         }
 
         evt.target.parentNode.classList.add('drp-targetmenu');
-        
-		if(DR.currentFlair in DR.SPRITES)
-			chrome.runtime.sendMessage({ character : DR.currentFlair, custom_sprites : DR.SPRITES[DR.currentFlair] }, spriteListReceiver);
-		else
-        	chrome.runtime.sendMessage({ character: DR.currentFlair }, spriteListReceiver);
+
+        chrome.runtime.sendMessage({
+            character: DR.currentFlair,
+            custom_sprites: DR.SPRITES[DR.currentId]
+        }, spriteListReceiver);
     }, true);
 
 })(window.DRreddit, document);

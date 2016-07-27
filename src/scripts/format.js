@@ -1,139 +1,215 @@
-(function (document) {
-    "use strict";
+"use strict";
 
+document.addEventListener('DOMContentLoaded', function () {
     if (RegExp('/r/danganronpa/', 'i').test(location.href) && !RegExp("class trial", "i").test(document.title))
         return;
 
-    var img, kid,
-        newsrc, lastsrc,
-        c, comment,
-        h, header,
-        p, paragraph,
-        a, anchor,
-        b, blockquote;
+    executeFormat();
 
-    var headers,
-        anchors,
-        paragraphs,
-        blockquotes,
-        comments = document.querySelectorAll('.thing.self, .thing.comment');
-        // comments = document.querySelectorAll('.entry .md');
-
-    for (c = 0; c < comments.length; c++) {
-        comment = comments[c].querySelector('.entry .md');
-
-        if (!comment)
-            continue;
-
-        if (c > 0) {
-            headers = comment.querySelectorAll('h2');
-
-            for (h = 0; header = headers[h]; h++) {
-                paragraph = document.createElement('p');
-
-                for (kid = header.firstChild; kid; kid = kid.nextSibling)
-                    paragraph.appendChild(kid);
-
-                comment.replaceChild(paragraph, header);
-                header = null;
-            }
+    // document.addEventListener('new_things_inserted', executeFormat, true);
+    Array.prototype.forEach.call(
+        document.querySelectorAll('.morecomments a.button'),
+        function(button) {
+            button.addEventListener('click', function() {
+                setTimeout(executeFormat, 3000);
+            }, true);
+            button = null;
         }
+    );
+}, true);
 
-        paragraphs = comment.querySelectorAll('p');
+function executeFormat() {
+    removeHeaders(document.querySelectorAll('.thing.comment h2'));
 
-        for (p = 0; paragraph = paragraphs[p]; p++) {
-            lastsrc = '';
-            anchors = paragraph.querySelectorAll('a');
+    Array.prototype.forEach.call(
+        document.querySelectorAll('.thing.self, .thing.comment'),
+        loadSprites
+    );
 
-            for (a = 0; anchor = anchors[a]; a++) {
+    Array.prototype.forEach.call(
+        document.querySelectorAll('.thing.comment blockquote'),
+        formatSystemMessage
+    );
+}
 
-                if (anchor.href.indexOf('mymjF4AZJrg') > -1
-                    || anchor.href.indexOf('#rebuttal') > -1) {
-                    comments[c].classList.add('drp-crossswords');
-                    continue;
-                }
+function removeHeaders(headers) {
+    // Convert the H2 nodes from the post replies in P nodes.
+    // This one is for you, Factorz.
 
-                newsrc = anchor.href
+    var h,
+        header, paragraph, kid;
+
+    for (h = 0; header = headers[h]; h++) {
+        paragraph = document.createElement('p');
+
+        for (kid = header.firstChild; kid; kid = kid.nextSibling)
+            paragraph.appendChild(kid);
+
+        header.parentNode.replaceChild(paragraph, header);
+    }
+
+    headers = null;
+    header = null;
+    paragraph = null;
+    kid = null;
+}
+
+function loadSprites(entry) {
+    var p, paragraph, paragraphs,
+        a, anchor, anchors;
+
+    var time,
+        img, kid,
+        newsrc, lastsrc;
+
+    if (entry.classList.contains('drt-scanned'))
+        return;
+
+    entry.classList.add('drt-scanned');
+
+    var comment = entry.querySelector('.entry .md');
+
+    if (!comment)
+        return;
+
+    // New reply highlighter
+    time = entry.querySelector('.edited-timestamp') || entry.querySelector('.live-timestamp');
+    time = (new Date(time.getAttribute('datetime'))).getTime();
+
+    if (time > sessionStorage.getItem(entry.dataset.fullname)) {
+        entry.classList.add('new-comment');
+        sessionStorage.setItem(entry.dataset.fullname, time);
+    }
+
+    // The true formatter
+    paragraphs = comment.querySelectorAll('p');
+
+    for (p = 0; paragraph = paragraphs[p]; p++) {
+        lastsrc = '';
+        anchors = paragraph.querySelectorAll('a');
+
+        for (a = 0; anchor = anchors[a]; a++) {
+            newsrc = anchor.href;
+
+            // Mentions are ignored
+            if (newsrc.indexOf('reddit.com/u/') > -1)
+                continue;
+
+            // Subreddits are ignored
+            if (newsrc.indexOf('reddit.com/r/') > -1)
+                continue;
+
+            // TODO: Format for Rebuttal Showdown
+            // if (newsrc.indexOf('mymjF4AZJrg') > -1 || newsrc.indexOf('#rebuttal') > -1) {
+            //     entry.classList.add('drt-crossswords');
+            //     continue;
+            // }
+
+            if (newsrc.indexOf('.wikia.') > -1) {
+                newsrc = newsrc
                     .replace(/revision\/latest.+$/, '')
                     .replace(/\/$/, '');
-
-                if (newsrc == lastsrc)
-                    continue;
-
-                img = new Image();
-
-                img.onerror = imageErrorOne;
-
-                if (paragraph.textContent.length < 25
-                    && RegExp('evidence|proof', 'i').test(anchor.textContent)
-                    ) {
-                    img.onload = imageLoadEvidence.bind(img, paragraph, anchor);
-                } else {
-                    img.onload = imageLoadSprite.bind(img, paragraph, anchor);
-                }
-
-                img.src = newsrc;
-                lastsrc = newsrc;
             }
-        }
 
-        blockquotes = comment.querySelectorAll('blockquote');
+            // If the same image is linked twice in the
+            // same paragraph, the second one is ignored
+            if (newsrc == lastsrc)
+                continue;
 
-        for (b = 0; blockquote = blockquotes[b]; b++) {
-            if (RegExp('added to (?:your|the) truth bullets?', 'i').test(blockquote.textContent)) {
-                blockquote.classList.add('drp-newbullet');
-                comment.classList.add('drp-dialogue');
+            img = new Image();
+
+            img.onerror = imageError;
+
+            if (newsrc.indexOf('#evidence') > -1) {
+                img.onload = imageLoadEvidence.bind(img, paragraph, anchor);
+
+            // } else if (anchor.textContent.length < 15) {
+            //     if (anchor.textContent.indexOf('evidence') > -1 || anchor.textContent.indexOf('proof') > -1)
+            //         img.onload = imageLoadEvidence.bind(img, paragraph, anchor);
+
+            } else {
+                img.onload = imageLoadSprite.bind(img, paragraph, anchor);
             }
+
+            img.src = newsrc;
+
+            if (img.complete)
+                img.onload();
+
+            lastsrc = newsrc;
         }
     }
 
-    comments = (c = (comment = null));
-    headers = (h = (header = null));
-    anchors = (p = (paragraph = null));
-    paragraphs = (a = (anchor = null));
-    blockquotes = (b = (blockquote = null));
+    paragraph = (paragraphs = null);
+    anchor = (anchors = null);
+    entry = null;
+    img = null;
+}
 
-    function imageErrorOne() {
-        if (this.src.indexOf('postimg.org') > -1) {
-            this.onerror = imageErrorTwo;
-            this.src = this.src.replace('://', '://proxy-4-web.appspot.com/');
-        } else {
-            this.onerror = null;
-            this.onload = null;
-        }
-    }
+function imageError() {
+    var counter = parseInt(this.dataset.attempts) || 0;
 
-    function imageErrorTwo() {
-        if (this.src.indexOf('postimg.org') > -1) {
-            this.onerror = imageErrorLast;
+    console.debug('DANGANREDDIT:DEBUG_SPRITE_LOAD', counter, this.src);
+
+    switch (counter) {
+        case 0:
+            this.src = this.src.replace(/^https?\:\/\//, 'https://proxy-4-web.appspot.com/');
+            break;
+
+        case 1:
             this.src = this.src.replace('://proxy-4-web.appspot.com/', '://icracks-53.appspot.com/');
-        } else {
-            this.onerror = null;
+            break;
+
+        case 2:
+            this.src = this.src.replace('://icracks-53.appspot.com/', '://harkproxy.appspot.com/');
+            break;
+
+        case 3:
+            this.src = this.src.replace('://harkproxy.appspot.com/', '://go-go-proxy.appspot.com/');
+            break;
+
+        default:
             this.onload = null;
-        }
+            this.onerror = null;
     }
 
-    function imageErrorLast() {
-        this.onerror = null;
-        this.onload = null;
+    this.dataset.attempts = (counter + 1);
+}
+
+function imageLoadSprite(p, a) {
+    if (!this.naturalWidth && !this.naturalHeight) {
+        this.onerror();
+        return;
     }
 
-    function imageLoadSprite(p, a) {
-        this.className = 'drp-sprite';
+    this.className = 'drp-sprite';
 
-        p.insertBefore(document.createElement('br'), a);
+    p.insertBefore(document.createElement('br'), a);
 
-        p.classList.add('drp-statement');
-        p.insertBefore(this, a);
+    p.classList.add('drp-statement');
+    p.insertBefore(this, a);
 
-        p.parentNode.classList.add('drp-dialogue');
+    p.parentNode.classList.add('drp-dialogue');
+}
+
+function imageLoadEvidence(p, a) {
+    if (!this.naturalWidth && !this.naturalHeight) {
+        this.onerror();
+        return;
     }
 
-    function imageLoadEvidence(p, a) {
-        this.className = 'drp-evidence';
+    this.className = 'drp-evidence';
 
-        p.parentNode.classList.add('drp-dialogue');
-        p.parentNode.insertBefore(this, p.nextSibling);
+    p.parentNode.classList.add('drp-dialogue');
+    p.parentNode.insertBefore(this, p.nextSibling);
+}
+
+function formatSystemMessage(blockquote) {
+    if (blockquote.classList.contains('drt-sysmessage'))
+        return;
+
+    if (RegExp('(?:added|updated) (?:to|in) (?:your|the) truth bullets?', 'i').test(blockquote.textContent)) {
+        blockquote.classList.add('drt-sysmessage');
+        blockquote.parentNode.classList.add('drt-dialogue');
     }
-
-})(document);
+}

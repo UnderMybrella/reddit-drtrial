@@ -12,9 +12,7 @@
         menu.appendChild(router);
         router = null;
 
-        target = document.querySelector(target);
-        if (target)
-            target.insertBefore(menu, target.firstElementChild);
+        target.insertBefore(menu, target.firstElementChild);
         target = null;
 
         menu = null;
@@ -117,7 +115,7 @@
         },
         currentCharacter: {
             get: function () {
-            	return this.NAMES[this.roleList.get(document.querySelector('#header .user a').textContent)]
+                return this.NAMES[this.roleList.get(document.querySelector('#header .user a').textContent)]
             }
         },
         isParticipant: {
@@ -140,7 +138,7 @@
                         var req = new XMLHttpRequest();
                         req.open(method, url, true);
 
-                        req.responseType = 'application/json';
+                        req.responseType = 'json';
 
                         req.onload = function() {
                             try {
@@ -227,8 +225,11 @@
         }
     });
 
-    prepareButtonMenu('.commentarea .usertext .bottom-area');
-    prepareButtonMenu('.sitetable .usertext .bottom-area');
+    Array.prototype.forEach.call(
+        document.querySelectorAll('.usertext .bottom-area'),
+        prepareButtonMenu
+    );
+
     prepareModal();
 
 })(window.DRreddit, document);
